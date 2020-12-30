@@ -23,6 +23,10 @@ abstract class Node extends Model
 {
     use HasRelationshipsWithinTree;
 
+    const LEFT_BOUND = 0;
+
+    const RIGHT_BOUND = PHP_INT_MAX;
+
     //protected const MOVE_ROOT = null;
 
     protected const MOVE_CHILD = 0;
@@ -86,14 +90,14 @@ abstract class Node extends Model
         return $this->getAttribute($this->getParentColumnName());
     }
 
-    public function getLeft(): int
+    public function getLeft()
     {
-        return $this->getAttribute($this->getLeftColumnName()) ?? 0;
+        return $this->getAttribute($this->getLeftColumnName()) ?? static::LEFT_BOUND;
     }
 
-    public function getRight(): int
+    public function getRight()
     {
-        return $this->getAttribute($this->getRightColumnName()) ?? PHP_INT_MAX;
+        return $this->getAttribute($this->getRightColumnName()) ?? static::RIGHT_BOUND;
     }
 
     public function getDepth(): int
@@ -282,8 +286,8 @@ abstract class Node extends Model
 
         // make node the first ond only root
         if (is_null($target)) {
-            $left = 0;
-            $right = PHP_INT_MAX;
+            $left = static::LEFT_BOUND;
+            $right = static::RIGHT_BOUND;
             $depth = 0;
         }
 
@@ -292,7 +296,7 @@ abstract class Node extends Model
             if (! is_null($leftTargetSibling = $target->getLeftSibling())) {
                 $left = $leftTargetSibling->getRight();
             } else {
-                $left = $target->isRoot() ? 0 : $target->parent->getLeft();
+                $left = $target->isRoot() ? static::LEFT_BOUND : $target->parent->getLeft();
             }
 
             $right = $target->getLeft();
@@ -312,7 +316,7 @@ abstract class Node extends Model
             if (! is_null($rightTargetSibling = $target->getRightSibling())) {
                 $right = $rightTargetSibling->getLeft();
             } else {
-                $right = $target->isRoot() ? PHP_INT_MAX : $target->parent->getRight();
+                $right = $target->isRoot() ? static::RIGHT_BOUND : $target->parent->getRight();
             }
 
             $left = $target->getRight();

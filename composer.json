@@ -1,0 +1,53 @@
+{
+    "name": "ttbooking/derevo",
+    "description": "Nested Set implementation using Eloquent models",
+    "type": "library",
+    "keywords": ["tree", "nested set"],
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/ttbooking/derevo/issues",
+        "source": "https://github.com/ttbooking/derevo"
+    },
+    "authors": [
+        {
+            "name": "Sergey Danilchenko",
+            "email": "s.danilchenko@ttbooking.ru"
+        }
+    ],
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "ext-bcmath": "*",
+        "illuminate/contracts": "^7.0 || ^8.0",
+        "illuminate/database": "^7.0 || ^8.0",
+        "illuminate/support": "^7.0 || ^8.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^5.0 || ^6.0 || ^7.0",
+        "phpunit/phpunit": "^8.4 || ^9.0"
+    },
+    "suggest": {
+        "illuminate/console": "Required to create tree database migrations, factories and node models via console commands (^7.0 || ^8.0)."
+    },
+    "autoload": {
+        "psr-4": {
+            "TTBooking\\Derevo\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TTBooking\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "TTBooking\\Derevo\\DerevoServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

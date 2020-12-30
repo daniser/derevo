@@ -18,7 +18,7 @@ class IntegerAllocator extends Allocator
         foreach ($ratios as $ratio) {
             $share = $amount * $ratio / $total;
             if ($share > 0) {
-                $spaces[] = new static($leftBoundary, $leftBoundary += $share);
+                $spaces[] = static::within($leftBoundary, $leftBoundary += $share);
             }
         }
 

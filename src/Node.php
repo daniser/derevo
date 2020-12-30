@@ -88,17 +88,17 @@ abstract class Node extends Model
 
     public function getLeft(): int
     {
-        return $this->getAttribute($this->getLeftColumnName());
+        return $this->getAttribute($this->getLeftColumnName()) ?? 0;
     }
 
     public function getRight(): int
     {
-        return $this->getAttribute($this->getRightColumnName());
+        return $this->getAttribute($this->getRightColumnName()) ?? PHP_INT_MAX;
     }
 
     public function getDepth(): int
     {
-        return $this->getAttribute($this->getDepthColumnName());
+        return $this->getAttribute($this->getDepthColumnName()) ?? 0;
     }
 
     public static function scopeRoots(Builder $query): Builder
@@ -261,7 +261,7 @@ abstract class Node extends Model
         //static::creating(fn (Node $node) => $node->initBounds());
 
         static::saving(function (Node $node) {
-            if ($node->isDirty($node->getParentColumnName())) {
+            if (! $node->exists || $node->isDirty($node->getParentColumnName())) {
                 $node->moveTo($node->parent);
             }
         });
@@ -323,8 +323,8 @@ abstract class Node extends Model
 
         // TODO: lock rows between left and right boundaries
         return $this
-            ->setLeft($space->getLeftBoundary())
-            ->setRight($space->getRightBoundary())
+            ->setLeft((int) $space->getLeftBoundary())
+            ->setRight((int) $space->getRightBoundary())
             ->setDepth($depth);
     }
 
@@ -345,12 +345,12 @@ abstract class Node extends Model
             ->setDepth($parentDepth + 1);
     }
 
-    protected function setLeft(int $left): self
+    protected function setLeft($left): self
     {
         return $this->setAttribute($this->getLeftColumnName(), $left);
     }
 
-    protected function setRight(int $right): self
+    protected function setRight($right): self
     {
         return $this->setAttribute($this->getRightColumnName(), $right);
     }

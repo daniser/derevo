@@ -1,0 +1,11 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use TTBooking\Derevo\Node;
+
+class {{ class }} extends Node
+{
+    use HasFactory;
+}

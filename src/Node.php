@@ -16,6 +16,7 @@ use TTBooking\Derevo\Support\IntegerAllocator;
  * @property static $parent
  * @property Collection|static[] $children
  * @property Collection|static[] $siblings
+ * @property Collection|static[] $siblingsAndSelf
  * @property Collection|static[] $descendants
  * @property Collection|static[] $descendantsAndSelf
  */
@@ -121,6 +122,11 @@ abstract class Node extends Model
     }
 
     public function siblings(): HasMany
+    {
+        return $this->siblingsAndSelf()->whereKeyNot($this->getKey());
+    }
+
+    public function siblingsAndSelf(): HasMany
     {
         return $this->hasMany(static::class, $this->getParentColumnName(), $this->getParentColumnName());
     }

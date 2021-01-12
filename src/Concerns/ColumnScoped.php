@@ -11,7 +11,7 @@ trait ColumnScoped
     public static function bootColumnScoped()
     {
         static::addGlobalScope('column', function (Builder $builder) {
-            $builder->where($builder->getModel()->getQualifiedScopedValues());
+            $builder->getModel()->isScoped() && $builder->where($builder->getModel()->getQualifiedScopedValues());
         });
     }
 

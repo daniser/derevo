@@ -158,7 +158,20 @@ abstract class Node extends Model
     {
         return
             $this->getLeft() > $other->getLeft() &&
-            $this->getLeft() < $other->getRight();
+            $this->getLeft() < $other->getRight() &&
+            $this->inSameScope($other);
+    }
+
+    /**
+     * @param  static  $other
+     * @return bool
+     */
+    public function isSelfOrDescendantOf(Node $other): bool
+    {
+        return
+            $this->getLeft() >= $other->getLeft() &&
+            $this->getLeft() < $other->getRight() &&
+            $this->inSameScope($other);
     }
 
     /**
@@ -169,7 +182,20 @@ abstract class Node extends Model
     {
         return
             $this->getLeft() < $other->getLeft() &&
-            $this->getRight() > $other->getLeft();
+            $this->getRight() > $other->getLeft() &&
+            $this->inSameScope($other);
+    }
+
+    /**
+     * @param  static  $other
+     * @return bool
+     */
+    public function isSelfOrAncestorOf(Node $other): bool
+    {
+        return
+            $this->getLeft() <= $other->getLeft() &&
+            $this->getRight() > $other->getLeft() &&
+            $this->inSameScope($other);
     }
 
     /**

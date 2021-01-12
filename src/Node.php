@@ -7,8 +7,8 @@ namespace TTBooking\Derevo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use TTBooking\Derevo\Concerns\ColumnScoped;
 use TTBooking\Derevo\Concerns\HasRelationshipsWithinTree;
-use TTBooking\Derevo\Concerns\MultiTree;
 use TTBooking\Derevo\Relations\HasManyDescendants;
 use TTBooking\Derevo\Support\IntegerAllocator;
 
@@ -23,7 +23,7 @@ use TTBooking\Derevo\Support\IntegerAllocator;
  */
 abstract class Node extends Model
 {
-    use MultiTree, HasRelationshipsWithinTree;
+    use ColumnScoped, HasRelationshipsWithinTree;
 
     const LEFT_BOUND = 0;
 

@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace TTBooking\Derevo\Concerns;
 
-use TTBooking\Derevo\TreeScope;
+use Illuminate\Database\Eloquent\Builder;
 
-trait MultiTree
+trait ColumnScoped
 {
-    public static function bootMultiTree()
+    public static function bootColumnScoped()
     {
-        static::addGlobalScope(new TreeScope);
+        static::addGlobalScope('column', function (Builder $builder) {
+            $builder->where($builder->getModel()->getQualifiedScopedValues());
+        });
     }
 
     public function isScoped(): bool

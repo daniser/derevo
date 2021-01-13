@@ -52,6 +52,10 @@ class HasSiblings extends HasMany
     {
         if (static::$constraints) {
             $this->query->where($this->foreignKey, $this->getParentKey());
+
+            if (! $this->andSelf) {
+                $this->query->whereKeyNot($this->parent->getKey());
+            }
         }
     }
 
@@ -64,6 +68,10 @@ class HasSiblings extends HasMany
     public function addEagerConstraints(array $models)
     {
         parent::addEagerConstraints($models);
+
+        if (! $this->andSelf) {
+            $this->query->whereKeyNot($this->getKeys($models, $this->parent->getKeyName()));
+        }
     }
 
     /**
@@ -78,7 +86,17 @@ class HasSiblings extends HasMany
      */
     public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
     {
-        return parent::getRelationExistenceQuery($query, $parentQuery, $columns);
+        if ($query->getQuery()->from == $parentQuery->getQuery()->from) {
+            return $this->getRelationExistenceQueryForSelfRelation($query, $parentQuery, $columns);
+        }
+
+        $query = parent::getRelationExistenceQuery($query, $parentQuery, $columns);
+
+        if (! $this->andSelf) {
+            $query->whereColumn($this->parent->getQualifiedKeyName(), '!=', $this->related->getQualifiedKeyName());
+        }
+
+        return $query;
     }
 
     /**
@@ -91,6 +109,14 @@ class HasSiblings extends HasMany
      */
     public function getRelationExistenceQueryForSelfRelation(Builder $query, Builder $parentQuery, $columns = ['*'])
     {
-        return parent::getRelationExistenceQueryForSelfRelation($query, $parentQuery, $columns);
+        $query = parent::getRelationExistenceQueryForSelfRelation($query, $parentQuery, $columns);
+
+        if (! $this->andSelf) {
+            $hash = $this->getRelationCountHash();
+
+            $query->whereColumn($this->parent->getQualifiedKeyName(), '!=', $hash.'.'.$this->related->getKeyName());
+        }
+
+        return $query;
     }
 }

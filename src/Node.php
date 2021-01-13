@@ -9,13 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use TTBooking\Derevo\Concerns\ColumnScoped;
 use TTBooking\Derevo\Concerns\HasRelationshipsWithinTree;
-use TTBooking\Derevo\Relations\HasManyDescendants;
+use TTBooking\Derevo\Relations\HasDescendants;
+use TTBooking\Derevo\Relations\HasSiblings;
 use TTBooking\Derevo\Support\IntegerAllocator;
 
 /**
  * @method static Builder roots(string[] $scope = [])
- * @method Builder siblingz()
- * @method Builder siblingzAndSelf()
  * @property static $parent
  * @property Collection|static[] $children
  * @property Collection|static[] $siblings
@@ -127,32 +126,22 @@ abstract class Node extends Model
         return $this->hasMany(static::class, $this->getParentColumnName());
     }
 
-    public function siblings(): HasMany
+    public function siblings(): HasSiblings
     {
-        return $this->siblingsAndSelf()->whereKeyNot($this->getKey());
+        return $this->hasSiblings();
     }
 
-    public function siblingsAndSelf(): HasMany
+    public function siblingsAndSelf(): HasSiblings
     {
-        return $this->hasMany(static::class, $this->getParentColumnName(), $this->getParentColumnName());
+        return $this->siblings()->andSelf();
     }
 
-    public function scopeSiblingz(Builder $query): Builder
+    public function descendants(): HasDescendants
     {
-        return $this->siblingzAndSelf()->whereKeyNot($this->getKey());
+        return $this->hasDescendants();
     }
 
-    public function scopeSiblingzAndSelf(Builder $query): Builder
-    {
-        return $query->whereParentKey($this->getParentKey());
-    }
-
-    public function descendants(): HasManyDescendants
-    {
-        return $this->hasManyDescendants();
-    }
-
-    public function descendantsAndSelf(): HasManyDescendants
+    public function descendantsAndSelf(): HasDescendants
     {
         return $this->descendants()->andSelf();
     }
@@ -237,7 +226,7 @@ abstract class Node extends Model
      */
     public function getLeftSibling(): ?self
     {
-        return $this->siblingz()
+        return $this->siblings()
             ->where($this->getLeftColumnName(), '<', $this->getLeft())
             ->orderByDesc($this->getLeftColumnName())
             ->first();
@@ -248,7 +237,7 @@ abstract class Node extends Model
      */
     public function getRightSibling(): ?self
     {
-        return $this->siblingz()
+        return $this->siblings()
             ->where($this->getLeftColumnName(), '>', $this->getRight())
             ->orderBy($this->getLeftColumnName())
             ->first();

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class HasManyDescendants extends HasMany
+class HasDescendants extends HasMany
 {
     /**
      * Force relation to include parent model in the result set.
@@ -46,7 +46,7 @@ class HasManyDescendants extends HasMany
     protected $rightColumn;
 
     /**
-     * Create a new has many descendants relationship instance.
+     * Create a new has descendants relationship instance.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  \Illuminate\Database\Eloquent\Model  $parent

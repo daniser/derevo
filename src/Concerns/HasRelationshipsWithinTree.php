@@ -6,19 +6,20 @@ namespace TTBooking\Derevo\Concerns;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use TTBooking\Derevo\Relations\HasManyDescendants;
+use TTBooking\Derevo\Relations\HasDescendants;
+use TTBooking\Derevo\Relations\HasSiblings;
 
 trait HasRelationshipsWithinTree
 {
     /**
-     * Define a one-to-many relationship within a tree.
+     * Define a node-descendants relationship within a tree.
      *
      * @param  string  $related
      * @param  string|null  $leftColumn
      * @param  string|null  $rightColumn
-     * @return HasManyDescendants
+     * @return HasDescendants
      */
-    public function hasManyDescendants($related = null, $leftColumn = null, $rightColumn = null)
+    public function hasDescendants($related = null, $leftColumn = null, $rightColumn = null): HasDescendants
     {
         $instance = $this->newRelatedInstance($related ?? static::class);
 
@@ -34,13 +35,30 @@ trait HasRelationshipsWithinTree
 
         $foreignRightColumn = $instance->getTable().'.'.$rightColumn;
 
-        return $this->newHasManyDescendants(
-            $instance->newQuery(), $this, $foreignKey, $localKey, $foreignLeftColumn, $foreignRightColumn, $leftColumn, $rightColumn
+        return $this->newHasDescendants(
+            $instance->newQuery(), $this, $foreignKey, $localKey,
+            $foreignLeftColumn, $foreignRightColumn, $leftColumn, $rightColumn
         );
     }
 
     /**
-     * Instantiate a new HasManyDescendants relationship.
+     * Define a node-siblings relationship within a tree.
+     *
+     * @param  string  $related
+     * @param  string|null  $ownerKey
+     * @return HasSiblings
+     */
+    public function hasSiblings($related = null, $ownerKey = null): HasSiblings
+    {
+        $instance = $this->newRelatedInstance($related ?? static::class);
+
+        $ownerKey = $ownerKey ?: $this->getParentColumnName();
+
+        return $this->newHasSiblings($instance->newQuery(), $this, $ownerKey);
+    }
+
+    /**
+     * Instantiate a new HasDescendants relationship.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  \Illuminate\Database\Eloquent\Model  $parent
@@ -48,10 +66,28 @@ trait HasRelationshipsWithinTree
      * @param  string  $localKey
      * @param  string  $leftColumn
      * @param  string  $rightColumn
-     * @return HasManyDescendants
+     * @return HasDescendants
      */
-    protected function newHasManyDescendants(Builder $query, Model $parent, $foreignKey, $localKey, $foreignLeftColumn, $foreignRightColumn, $leftColumn, $rightColumn)
+    protected function newHasDescendants(
+        Builder $query, Model $parent, $foreignKey, $localKey,
+        $foreignLeftColumn, $foreignRightColumn, $leftColumn, $rightColumn
+    ): HasDescendants {
+        return new HasDescendants(
+            $query, $parent, $foreignKey, $localKey,
+            $foreignLeftColumn, $foreignRightColumn, $leftColumn, $rightColumn
+        );
+    }
+
+    /**
+     * Instantiate a new HasSiblings relationship.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  \Illuminate\Database\Eloquent\Model  $parent
+     * @param  string  $ownerKey
+     * @return HasSiblings
+     */
+    protected function newHasSiblings(Builder $query, Model $parent, $ownerKey): HasSiblings
     {
-        return new HasManyDescendants($query, $parent, $foreignKey, $localKey, $foreignLeftColumn, $foreignRightColumn, $leftColumn, $rightColumn);
+        return new HasSiblings($query, $parent, $ownerKey);
     }
 }

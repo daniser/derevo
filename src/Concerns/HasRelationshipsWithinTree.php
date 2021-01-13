@@ -14,14 +14,13 @@ trait HasRelationshipsWithinTree
     /**
      * Define a node-descendants relationship within a tree.
      *
-     * @param  string  $related
      * @param  string|null  $leftColumn
      * @param  string|null  $rightColumn
      * @return HasDescendants
      */
-    public function hasDescendants($related = null, $leftColumn = null, $rightColumn = null): HasDescendants
+    public function hasDescendants($leftColumn = null, $rightColumn = null): HasDescendants
     {
-        $instance = $this->newRelatedInstance($related ?? static::class);
+        $instance = $this->newInstance();
 
         $foreignKey = $instance->getTable().'.'.$this->getForeignKey();
 
@@ -44,13 +43,12 @@ trait HasRelationshipsWithinTree
     /**
      * Define a node-siblings relationship within a tree.
      *
-     * @param  string  $related
      * @param  string|null  $ownerKey
      * @return HasSiblings
      */
-    public function hasSiblings($related = null, $ownerKey = null): HasSiblings
+    public function hasSiblings($ownerKey = null): HasSiblings
     {
-        $instance = $this->newRelatedInstance($related ?? static::class);
+        $instance = $this->newInstance();
 
         $ownerKey = $ownerKey ?: $this->getParentColumnName();
 

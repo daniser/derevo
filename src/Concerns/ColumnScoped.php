@@ -15,6 +15,18 @@ trait ColumnScoped
         });
     }
 
+    /**
+     * Create a new instance of the given model.
+     *
+     * @param  array  $attributes
+     * @param  bool  $exists
+     * @return static
+     */
+    public function newInstance($attributes = [], $exists = false)
+    {
+        return parent::newInstance($attributes + $this->getScopedValues(), $exists);
+    }
+
     public function isScoped(): bool
     {
         return count($this->getScopedColumns()) > 0;

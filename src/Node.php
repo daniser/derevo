@@ -13,7 +13,7 @@ use TTBooking\Derevo\Relations\HasManyDescendants;
 use TTBooking\Derevo\Support\IntegerAllocator;
 
 /**
- * @method static Builder roots()
+ * @method static Builder roots(string[] $scope = [])
  * @property static $parent
  * @property Collection|static[] $children
  * @property Collection|static[] $siblings
@@ -110,9 +110,9 @@ abstract class Node extends Model
         return $this->getAttribute($this->getDepthColumnName()) ?? 0;
     }
 
-    public static function scopeRoots(Builder $query): Builder
+    public static function scopeRoots(Builder $query, array $scope = []): Builder
     {
-        return $query->whereNull((new static)->getParentColumnName());
+        return $query->withoutGlobalScope('column')->where($scope)->whereNull((new static)->getParentColumnName());
     }
 
     public function parent(): BelongsTo
@@ -199,21 +199,23 @@ abstract class Node extends Model
     }
 
     /**
+     * @param  string[]  $scope
      * @return static|null
      */
-    public static function getFirstRoot(): ?self
+    public static function getFirstRoot(array $scope = []): ?self
     {
-        return static::roots()
+        return static::roots($scope)
             ->orderBy((new static)->getLeftColumnName())
             ->first();
     }
 
     /**
+     * @param  string[]  $scope
      * @return static|null
      */
-    public static function getLastRoot(): ?self
+    public static function getLastRoot(array $scope = []): ?self
     {
-        return static::roots()
+        return static::roots($scope)
             ->orderByDesc((new static)->getLeftColumnName())
             ->first();
     }
@@ -316,7 +318,7 @@ abstract class Node extends Model
     {
         // move to the root
         if (is_null($target)) {
-            $target = static::getLastRoot();
+            $target = static::getLastRoot($this->getQualifiedScopedValues());
             $position = self::MOVE_RIGHT;
         }
 

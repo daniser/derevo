@@ -14,6 +14,8 @@ use TTBooking\Derevo\Support\IntegerAllocator;
 
 /**
  * @method static Builder roots(string[] $scope = [])
+ * @method Builder siblingz()
+ * @method Builder siblingzAndSelf()
  * @property static $parent
  * @property Collection|static[] $children
  * @property Collection|static[] $siblings
@@ -135,6 +137,16 @@ abstract class Node extends Model
         return $this->hasMany(static::class, $this->getParentColumnName(), $this->getParentColumnName());
     }
 
+    public function scopeSiblingz(Builder $query): Builder
+    {
+        return $this->siblingzAndSelf()->whereKeyNot($this->getKey());
+    }
+
+    public function scopeSiblingzAndSelf(Builder $query): Builder
+    {
+        return $query->whereParentKey($this->getParentKey());
+    }
+
     public function descendants(): HasManyDescendants
     {
         return $this->hasManyDescendants();
@@ -225,7 +237,7 @@ abstract class Node extends Model
      */
     public function getLeftSibling(): ?self
     {
-        return $this->siblings()
+        return $this->siblingz()
             ->where($this->getLeftColumnName(), '<', $this->getLeft())
             ->orderByDesc($this->getLeftColumnName())
             ->first();
@@ -236,7 +248,7 @@ abstract class Node extends Model
      */
     public function getRightSibling(): ?self
     {
-        return $this->siblings()
+        return $this->siblingz()
             ->where($this->getLeftColumnName(), '>', $this->getRight())
             ->orderBy($this->getLeftColumnName())
             ->first();

@@ -6,6 +6,9 @@ namespace TTBooking\Derevo\Concerns;
 
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * @method static Builder scoped(string[] $scope = [])
+ */
 trait ColumnScoped
 {
     public static function bootColumnScoped()
@@ -13,6 +16,11 @@ trait ColumnScoped
         static::addGlobalScope('column', function (Builder $builder) {
             $builder->getModel()->isScoped() && $builder->where($builder->getModel()->getQualifiedScopedValues());
         });
+    }
+
+    public static function scopeScoped(Builder $query, array $scope = []): Builder
+    {
+        return $query->withoutGlobalScope('column')->where($scope);
     }
 
     /**

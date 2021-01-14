@@ -16,6 +16,8 @@ use TTBooking\Derevo\Support\IntegerAllocator;
 
 /**
  * @method static Builder roots(string[] $scope = [])
+ * @method static Builder leaves(string[] $scope = [])
+ * @method static Builder trunks(string[] $scope = [])
  * @property static $parent
  * @property Collection|static[] $children
  * @property Collection|static[] $ancestors
@@ -116,7 +118,19 @@ abstract class Node extends Model
 
     public static function scopeRoots(Builder $query, array $scope = []): Builder
     {
-        return $query->withoutGlobalScope('column')->where($scope)->whereNull((new static)->getParentColumnName());
+        return $query->scoped($scope)->whereNull((new static)->getParentColumnName());
+    }
+
+    public static function scopeLeaves(Builder $query, array $scope = []): Builder
+    {
+        return $query->scoped($scope)->whereDoesntHave('children');
+    }
+
+    public static function scopeTrunks(Builder $query, array $scope = []): Builder
+    {
+        return $query->scoped($scope)
+            ->whereNotNull((new static)->getParentColumnName())
+            ->whereHas('children');
     }
 
     public function parent(): BelongsTo
@@ -162,6 +176,16 @@ abstract class Node extends Model
     public function isRoot(): bool
     {
         return is_null($this->getParentKey());
+    }
+
+    public function isLeaf(): bool
+    {
+        return $this->children()->doesntExist();
+    }
+
+    public function isTrunk(): bool
+    {
+        return ! $this->isRoot() && ! $this->isLeaf();
     }
 
     /**

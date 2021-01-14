@@ -8,4 +8,6 @@ use TTBooking\Derevo\Node;
 class {{ class }} extends Node
 {
     use HasFactory;
+
+    //protected $scoped = 'scope_id';
 }

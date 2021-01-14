@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use TTBooking\Derevo\Concerns\ColumnScoped;
 use TTBooking\Derevo\Concerns\HasRelationshipsWithinTree;
+use TTBooking\Derevo\Relations\HasAncestors;
 use TTBooking\Derevo\Relations\HasDescendants;
 use TTBooking\Derevo\Relations\HasSiblings;
 use TTBooking\Derevo\Support\IntegerAllocator;
@@ -17,10 +18,12 @@ use TTBooking\Derevo\Support\IntegerAllocator;
  * @method static Builder roots(string[] $scope = [])
  * @property static $parent
  * @property Collection|static[] $children
- * @property Collection|static[] $siblings
- * @property Collection|static[] $siblingsAndSelf
+ * @property Collection|static[] $ancestors
+ * @property Collection|static[] $ancestorsAndSelf
  * @property Collection|static[] $descendants
  * @property Collection|static[] $descendantsAndSelf
+ * @property Collection|static[] $siblings
+ * @property Collection|static[] $siblingsAndSelf
  */
 abstract class Node extends Model
 {
@@ -126,14 +129,14 @@ abstract class Node extends Model
         return $this->hasMany(static::class, $this->getParentColumnName());
     }
 
-    public function siblings(): HasSiblings
+    public function ancestors(): HasAncestors
     {
-        return $this->hasSiblings();
+        return $this->hasAncestors();
     }
 
-    public function siblingsAndSelf(): HasSiblings
+    public function ancestorsAndSelf(): HasAncestors
     {
-        return $this->siblings()->andSelf();
+        return $this->ancestors()->andSelf();
     }
 
     public function descendants(): HasDescendants
@@ -144,6 +147,16 @@ abstract class Node extends Model
     public function descendantsAndSelf(): HasDescendants
     {
         return $this->descendants()->andSelf();
+    }
+
+    public function siblings(): HasSiblings
+    {
+        return $this->hasSiblings();
+    }
+
+    public function siblingsAndSelf(): HasSiblings
+    {
+        return $this->siblings()->andSelf();
     }
 
     public function isRoot(): bool

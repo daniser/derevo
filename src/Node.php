@@ -401,11 +401,48 @@ abstract class Node extends Model
 
         $space = IntegerAllocator::within($left, $right)->allocateTo(1, 1, 1)[1];
 
+        $this->performSubtreeMove(
+            (int) $space->getLeftBoundary(),
+            (int) $space->getRightBoundary(),
+            $depth
+        );
+
         // TODO: lock rows between left and right boundaries
         return $this
             ->setLeft((int) $space->getLeftBoundary())
             ->setRight((int) $space->getRightBoundary())
             ->setDepth($depth);
+    }
+
+    protected function performSubtreeMove($newLeft, $newRight, $newDepth): self
+    {
+        $connection = $this->getConnection();
+        $grammar = $connection->getQueryGrammar();
+
+        $leftColumn = $grammar->wrap($this->getLeftColumnName());
+        $rightColumn = $grammar->wrap($this->getRightColumnName());
+        $depthColumn = $grammar->wrap($this->getDepthColumnName());
+
+        $left = $this->getLeft();
+        $right = $this->getRight();
+        $depth = $this->getDepth();
+
+        $scale = ($newRight - $newLeft) / ($right - $left);
+        $depthShift = $newDepth - $depth;
+
+        $rawStatements = [
+            $leftColumn => "{$newLeft} + ({$leftColumn} - {$left}) * {$scale}",
+            $rightColumn => "{$newLeft} + ({$rightColumn} - {$left}) * {$scale}",
+            $depthColumn => "{$depthColumn} + {$depthShift}",
+        ];
+
+        $this->newQuery()
+            ->whereBetween($this->getLeftColumnName(), [$left, $right])
+            ->whereBetween($this->getRightColumnName(), [$left, $right])
+            ->whereNotNull($this->getDepthColumnName())
+            ->update(array_map([$connection, 'raw'], $rawStatements));
+
+        return $this;
     }
 
     protected function initBounds(self $parent = null): self

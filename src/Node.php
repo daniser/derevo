@@ -30,7 +30,7 @@ use TTBooking\Derevo\Support\IntegerAllocator;
  */
 abstract class Node extends Model
 {
-    use HasFactory, ColumnScoped, HasRelationshipsWithinTree;
+    use ColumnScoped, HasRelationshipsWithinTree;
 
     const LEFT_BOUND = 0;
 
@@ -346,11 +346,6 @@ abstract class Node extends Model
                 $node->moveTo($node->unsetRelation('parent')->parent);
             }
         });
-    }
-
-    protected static function newFactory()
-    {
-        return new NodeFactory;
     }
 
     /**

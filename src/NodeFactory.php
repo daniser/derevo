@@ -6,15 +6,8 @@ namespace TTBooking\Derevo;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class NodeFactory extends Factory
+abstract class NodeFactory extends Factory
 {
-    /**
-     * The name of the factory's corresponding model.
-     *
-     * @var string
-     */
-    protected $model = Node::class;
-
     /**
      * Define the model's default state.
      *
@@ -23,7 +16,8 @@ class NodeFactory extends Factory
     public function definition()
     {
         return [
-            //
+            $this->newModel()->getParentColumnName() =>
+                $this->newModel()->newQuery()->inRandomOrder()->firstOrNew()->getKey(),
         ];
     }
 }

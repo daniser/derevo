@@ -342,7 +342,7 @@ abstract class Node extends Model
 
         static::saving(function (Node $node) {
             if (! $node->exists || $node->isDirty($node->getParentColumnName())) {
-                $node->moveTo($node->parent);
+                $node->moveTo($node->unsetRelation('parent')->parent);
             }
         });
     }
@@ -401,11 +401,13 @@ abstract class Node extends Model
 
         $space = IntegerAllocator::within($left, $right)->allocateTo(1, 1, 1)[1];
 
-        $this->performSubtreeMove(
-            (int) $space->getLeftBoundary(),
-            (int) $space->getRightBoundary(),
-            $depth
-        );
+        if ($this->exists) {
+            $this->performSubtreeMove(
+                (int) $space->getLeftBoundary(),
+                (int) $space->getRightBoundary(),
+                $depth
+            );
+        }
 
         // TODO: lock rows between left and right boundaries
         return $this
@@ -419,9 +421,9 @@ abstract class Node extends Model
         $connection = $this->getConnection();
         $grammar = $connection->getQueryGrammar();
 
-        $leftColumn = $grammar->wrap($this->getLeftColumnName());
-        $rightColumn = $grammar->wrap($this->getRightColumnName());
-        $depthColumn = $grammar->wrap($this->getDepthColumnName());
+        $leftColumn = $grammar->wrap($unwrappedLeftColumn = $this->getLeftColumnName());
+        $rightColumn = $grammar->wrap($unwrappedRightColumn = $this->getRightColumnName());
+        $depthColumn = $grammar->wrap($unwrappedDepthColumn = $this->getDepthColumnName());
 
         $left = $this->getLeft();
         $right = $this->getRight();
@@ -431,15 +433,15 @@ abstract class Node extends Model
         $depthShift = $newDepth - $depth;
 
         $rawStatements = [
-            $leftColumn => "{$newLeft} + ({$leftColumn} - {$left}) * {$scale}",
-            $rightColumn => "{$newLeft} + ({$rightColumn} - {$left}) * {$scale}",
-            $depthColumn => "{$depthColumn} + {$depthShift}",
+            $unwrappedLeftColumn => "{$newLeft} + ({$leftColumn} - {$left}) * {$scale}",
+            $unwrappedRightColumn => "{$newLeft} + ({$rightColumn} - {$left}) * {$scale}",
+            $unwrappedDepthColumn => "{$depthColumn} + {$depthShift}",
         ];
 
         $this->newQuery()
-            ->whereBetween($this->getLeftColumnName(), [$left, $right])
-            ->whereBetween($this->getRightColumnName(), [$left, $right])
-            ->whereNotNull($this->getDepthColumnName())
+            ->whereBetween($unwrappedLeftColumn, [$left, $right])
+            ->whereBetween($unwrappedRightColumn, [$left, $right])
+            ->whereNotNull($unwrappedDepthColumn)
             ->update(array_map([$connection, 'raw'], $rawStatements));
 
         return $this;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TTBooking\Derevo;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,7 +30,7 @@ use TTBooking\Derevo\Support\IntegerAllocator;
  */
 abstract class Node extends Model
 {
-    use ColumnScoped, HasRelationshipsWithinTree;
+    use HasFactory, ColumnScoped, HasRelationshipsWithinTree;
 
     const LEFT_BOUND = 0;
 
@@ -345,6 +346,11 @@ abstract class Node extends Model
                 $node->moveTo($node->unsetRelation('parent')->parent);
             }
         });
+    }
+
+    protected static function newFactory()
+    {
+        return new NodeFactory;
     }
 
     /**

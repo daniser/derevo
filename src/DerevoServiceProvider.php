@@ -15,16 +15,18 @@ class DerevoServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->publishes([
-            __DIR__.'/../config/derevo.php' => $this->app->configPath('derevo.php'),
-        ], 'config');
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/derevo.php' => $this->app->configPath('derevo.php'),
+            ], 'config');
 
-        $this->commands([
-            Console\TreeMakeCommand::class,
-            Console\MigrateTreeMakeCommand::class,
-            Console\NodeFactoryMakeCommand::class,
-            Console\TreeRebuildCommand::class,
-        ]);
+            $this->commands([
+                Console\TreeMakeCommand::class,
+                Console\MigrateTreeMakeCommand::class,
+                Console\NodeFactoryMakeCommand::class,
+                Console\TreeRebuildCommand::class,
+            ]);
+        }
     }
 
     /**

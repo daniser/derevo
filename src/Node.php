@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace TTBooking\Derevo;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Collection as BaseCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -172,6 +172,60 @@ abstract class Node extends Model
     public function siblingsAndSelf(): HasSiblings
     {
         return $this->siblings()->andSelf();
+    }
+
+    /**
+     * @param  string|string[]  $columns
+     * @return Collection
+     */
+    public function getAncestors($columns = ['*']): BaseCollection
+    {
+        return $this->ancestors()->get($columns);
+    }
+
+    /**
+     * @param  string|string[]  $columns
+     * @return Collection
+     */
+    public function getAncestorsAndSelf($columns = ['*']): BaseCollection
+    {
+        return $this->ancestorsAndSelf()->get($columns);
+    }
+
+    /**
+     * @param  string|string[]  $columns
+     * @return Collection
+     */
+    public function getDescendants($columns = ['*']): BaseCollection
+    {
+        return $this->descendants()->get($columns);
+    }
+
+    /**
+     * @param  string|string[]  $columns
+     * @return Collection
+     */
+    public function getDescendantsAndSelf($columns = ['*']): BaseCollection
+    {
+        return $this->descendantsAndSelf()->get($columns);
+    }
+
+    /**
+     * @param  string|string[]  $columns
+     * @return Collection
+     */
+    public function getSiblings($columns = ['*']): BaseCollection
+    {
+        return $this->siblings()->get($columns);
+    }
+
+    /**
+     * @param  string|string[]  $columns
+     * @return Collection
+     */
+    public function getSiblingsAndSelf($columns = ['*']): BaseCollection
+    {
+        return $this->siblingsAndSelf()->get($columns);
     }
 
     public function isRoot(): bool

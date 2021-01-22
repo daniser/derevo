@@ -22,6 +22,7 @@ class DerevoServiceProvider extends ServiceProvider
         $this->commands([
             Console\TreeMakeCommand::class,
             Console\MigrateTreeMakeCommand::class,
+            Console\NodeFactoryMakeCommand::class,
             Console\TreeRebuildCommand::class,
         ]);
     }

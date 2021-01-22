@@ -31,6 +31,21 @@ class TreeMakeCommand extends ModelMakeCommand
     protected $type = 'Tree';
 
     /**
+     * Create a model factory for the model.
+     *
+     * @return void
+     */
+    protected function createFactory()
+    {
+        $factory = Str::studly($this->argument('name'));
+
+        $this->call('make:node-factory', [
+            'name' => "{$factory}Factory",
+            '--model' => $this->qualifyClass($this->getNameInput()),
+        ]);
+    }
+
+    /**
      * Create a migration file for the tree model.
      *
      * @return void
@@ -52,6 +67,6 @@ class TreeMakeCommand extends ModelMakeCommand
      */
     protected function getStub()
     {
-        return __DIR__.'/stubs/tree.stub';
+        return __DIR__.'/stubs/node.stub';
     }
 }

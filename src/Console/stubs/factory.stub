@@ -1,0 +1,28 @@
+<?php
+
+namespace {{ factoryNamespace }};
+
+use TTBooking\Derevo\NodeFactory;
+use {{ namespacedModel }};
+
+class {{ factory }}Factory extends NodeFactory
+{
+    /**
+     * The name of the factory's corresponding node.
+     *
+     * @var string
+     */
+    protected $model = {{ model }}::class;
+
+    /**
+     * Define the node's default state.
+     *
+     * @return array
+     */
+    public function definition()
+    {
+        return [
+            //
+        ];
+    }
+}

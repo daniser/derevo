@@ -24,6 +24,13 @@ class MigrateTreeMakeCommand extends MigrateMakeCommand
         {--fullpath : Output the full path of the migration}';
 
     /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Create a new Derevo nested set migration file';
+
+    /**
      * Create a new tree migration install command instance.
      *
      * @param  \Illuminate\Filesystem\Filesystem  $files

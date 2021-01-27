@@ -17,14 +17,14 @@ class {{ class }} extends Migration
             $table->id();
             //$table->unsignedInteger('scope_id')->nullable()->index();
             $table->unsignedBigInteger('parent_id')->nullable()->index();
-            $table->unsignedBigInteger('lft')->nullable()->index();
-            $table->unsignedBigInteger('rgt')->nullable()->index();
+            $table->unsignedBigInteger('lft')->nullable()->unique();
+            $table->unsignedBigInteger('rgt')->nullable()->unique();
             $table->unsignedInteger('depth')->nullable();
             $table->timestamps();
         });
 
         Schema::table('{{ table }}', function (Blueprint $table) {
-            $table->foreign('parent_id')->references('id')->on('{{ table }}');
+            $table->foreign('parent_id')->references('id')->on('{{ table }}')->cascadeOnDelete();
         });
     }
 

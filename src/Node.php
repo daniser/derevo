@@ -104,17 +104,62 @@ abstract class Node extends Model
 
     public function getLeft()
     {
-        return $this->getAttribute($this->getLeftColumnName()) ?? static::LEFT_BOUND;
+        return $this->getAttribute($this->getLeftColumnName());
     }
 
     public function getRight()
     {
-        return $this->getAttribute($this->getRightColumnName()) ?? static::RIGHT_BOUND;
+        return $this->getAttribute($this->getRightColumnName());
     }
 
-    public function getDepth(): int
+    public function getDepth(): ?int
     {
-        return $this->getAttribute($this->getDepthColumnName()) ?? 0;
+        return $this->getAttribute($this->getDepthColumnName());
+    }
+
+    public function getLeftBoundary()
+    {
+        if (! is_null($leftSibling = $this->getLeftSibling())) {
+            return $leftSibling->getRight();
+        }
+
+        if (! $this->isRoot()) {
+            return $this->parent->getLeft();
+        }
+
+        return static::LEFT_BOUND;
+    }
+
+    public function getRightBoundary()
+    {
+        if (! is_null($rightSibling = $this->getRightSibling())) {
+            return $rightSibling->getLeft();
+        }
+
+        if (! $this->isRoot()) {
+            return $this->parent->getRight();
+        }
+
+        return static::RIGHT_BOUND;
+    }
+
+    public function getInnerSpace()
+    {
+        if (! is_null($left = $this->getLeft()) && ! is_null($right = $this->getRight())) {
+            return $right - $left;
+        }
+
+        return null;
+    }
+
+    public function getLeftSpace()
+    {
+        return ! is_null($leftBound = $this->getLeftBoundary()) ? $this->getLeft() - $leftBound : null;
+    }
+
+    public function getRightSpace()
+    {
+        return ! is_null($rightBound = $this->getRightBoundary()) ? $rightBound - $this->getRight() : null;
     }
 
     public static function scopeRoots(Builder $query, array $scope = []): Builder
@@ -393,8 +438,6 @@ abstract class Node extends Model
 
     protected static function booted()
     {
-        //static::creating(fn (Node $node) => $node->initBounds());
-
         static::saving(function (Node $node) {
             if (! $node->exists || $node->isDirty($node->getParentColumnName())) {
                 $node->moveTo($node->unsetRelation('parent')->parent);
@@ -409,66 +452,62 @@ abstract class Node extends Model
      */
     protected function moveTo(self $target = null, int $position = self::MOVE_CHILD): self
     {
-        // move to the root
+        $newBoundaries = $this->allocateWithin(...$this->resolveBoundaries($target, $position));
+        $this->exists && $this->performSubtreeMove(...$newBoundaries);
+
+        // TODO: lock rows between left and right boundaries
+        return $this
+            ->setLeft($newBoundaries[0])
+            ->setRight($newBoundaries[1])
+            ->setDepth($newBoundaries[2]);
+    }
+
+    /**
+     * @param  static|null  $target
+     * @param  int  $position
+     * @return array
+     */
+    protected function resolveBoundaries(self $target = null, int $position = self::MOVE_CHILD): array
+    {
+        // Move node to the root
         if (is_null($target)) {
             $target = static::getLastRoot($this->getQualifiedScopedValues());
             $position = self::MOVE_RIGHT;
         }
 
-        // make node the first ond only root
+        // Make node the first and only root
         if (is_null($target)) {
-            $left = static::LEFT_BOUND;
-            $right = static::RIGHT_BOUND;
-            $depth = 0;
+            return [static::LEFT_BOUND, static::RIGHT_BOUND, 0];
         }
 
-        // move to the left
-        elseif ($position === self::MOVE_LEFT) {
-            if (! is_null($leftTargetSibling = $target->getLeftSibling())) {
-                $left = $leftTargetSibling->getRight();
-            } else {
-                $left = $target->isRoot() ? static::LEFT_BOUND : $target->parent->getLeft();
-            }
+        $position = $position <=> self::MOVE_CHILD;
 
-            $right = $target->getLeft();
-            $depth = $target->getDepth();
+        // Convert "move to children" action to "move to the right of last child"
+        if ($position === self::MOVE_CHILD && ! is_null($lastChild = $target->getLastChild())) {
+            $target = $lastChild;
+            $position = self::MOVE_RIGHT;
         }
 
-        // move into
-        elseif ($position === self::MOVE_CHILD) {
-            $lastTargetChild = $target->getLastChild();
-            $left = is_null($lastTargetChild) ? $target->getLeft() : $lastTargetChild->getRight();
-            $right = $target->getRight();
-            $depth = $target->getDepth() + 1;
+        // Find boundaries for a new node based on target and relative position
+        switch ($position) {
+            case self::MOVE_LEFT:
+                return [$target->getLeftBoundary(), $target->getLeft(), $target->getDepth()];
+            case self::MOVE_CHILD:
+                return [$target->getLeft(), $target->getRight(), $target->getDepth() + 1];
+            default:
+                return [$target->getRight(), $target->getRightBoundary(), $target->getDepth()];
         }
+    }
 
-        // move to the right
-        elseif ($position === self::MOVE_RIGHT) {
-            if (! is_null($rightTargetSibling = $target->getRightSibling())) {
-                $right = $rightTargetSibling->getLeft();
-            } else {
-                $right = $target->isRoot() ? static::RIGHT_BOUND : $target->parent->getRight();
-            }
-
-            $left = $target->getRight();
-            $depth = $target->getDepth();
-        }
-
+    protected function allocateWithin($left, $right, $depth): array
+    {
         $space = IntegerAllocator::within($left, $right)->allocateTo(1, 1, 1)[1];
 
-        if ($this->exists) {
-            $this->performSubtreeMove(
-                (int) $space->getLeftBoundary(),
-                (int) $space->getRightBoundary(),
-                $depth
-            );
-        }
-
-        // TODO: lock rows between left and right boundaries
-        return $this
-            ->setLeft((int) $space->getLeftBoundary())
-            ->setRight((int) $space->getRightBoundary())
-            ->setDepth($depth);
+        return [
+            (int) $space->getLeftBoundary(),
+            (int) $space->getRightBoundary(),
+            $depth,
+        ];
     }
 
     protected function performSubtreeMove($newLeft, $newRight, $newDepth): self
@@ -500,23 +539,6 @@ abstract class Node extends Model
             ->update(array_map([$connection, 'raw'], $rawStatements));
 
         return $this;
-    }
-
-    protected function initBounds(self $parent = null): self
-    {
-        $lastRight = $this->newQuery()
-            ->where($this->getQualifiedParentColumnName(), isset($parent) ? $parent->getKey() : null)
-            ->orderByDesc($rightColumn = $this->getRightColumnName())
-            ->take(1)->sharedLock()->value($rightColumn) ?? -1;
-
-        $maxRight = isset($parent) ? $parent->getRight() - 1 : PHP_INT_MAX;
-
-        $parentDepth = isset($parent) ? $parent->getDepth() : -1;
-
-        return $this
-            ->setLeft($lastRight + 1)
-            ->setRight((int) $maxRight / 2)
-            ->setDepth($parentDepth + 1);
     }
 
     protected function setLeft($left): self

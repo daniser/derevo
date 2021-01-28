@@ -15,7 +15,6 @@ use TTBooking\Derevo\Concerns\HasRelationshipsWithinTree;
 use TTBooking\Derevo\Relations\HasAncestors;
 use TTBooking\Derevo\Relations\HasDescendants;
 use TTBooking\Derevo\Relations\HasSiblings;
-use TTBooking\Derevo\Support\IntegerAllocator;
 
 /**
  * @method static Builder roots(string[] $scope = [])
@@ -124,8 +123,8 @@ abstract class Node extends Model
 
     public static function rootRightBoundary(): BigInteger
     {
-        static $rightBound = static::RIGHT_BOUND;
-        $rightBound ??= static::query()->selectRaw('~0 as result')->value('result');
+        static $rightBound;
+        $rightBound = static::RIGHT_BOUND ?? static::query()->selectRaw('~0 as result')->value('result');
 
         return BigInteger::of($rightBound);
     }
@@ -522,13 +521,9 @@ abstract class Node extends Model
 
     protected function allocateWithin(?BigInteger $left, ?BigInteger $right, int $depth): array
     {
-        $space = IntegerAllocator::within((string) $left, (string) $right)->allocateTo(1, 1, 1)[1];
+        $chunk = $right->minus($left)->dividedBy(3, RoundingMode::HALF_EVEN);
 
-        return [
-            BigInteger::of((int) $space->getLeftBoundary()),
-            BigInteger::of((int) $space->getRightBoundary()),
-            $depth,
-        ];
+        return [$left->plus($chunk), $right->minus($chunk), $depth];
     }
 
     protected function performSubtreeMove(?BigInteger $newLeft, ?BigInteger $newRight, int $newDepth): self

@@ -124,7 +124,8 @@ abstract class Node extends Model
     public static function rootRightBoundary(): BigInteger
     {
         static $rightBound;
-        $rightBound = static::RIGHT_BOUND ?? static::query()->selectRaw('~0 as result')->value('result');
+        $rightBound = static::RIGHT_BOUND
+            ?? (new static)->newBaseQueryBuilder()->selectRaw('~0 as result')->value('result');
 
         return BigInteger::of($rightBound);
     }

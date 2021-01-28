@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace TTBooking\Derevo;
 
+use Brick\Math\BigInteger;
+use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Collection as BaseCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,11 +34,9 @@ abstract class Node extends Model
 {
     use ColumnScoped, HasRelationshipsWithinTree;
 
-    const LEFT_BOUND = 0;
+    protected const LEFT_BOUND = 0;
 
-    const RIGHT_BOUND = PHP_INT_MAX;
-
-    //protected const MOVE_ROOT = null;
+    protected const RIGHT_BOUND = null;
 
     protected const MOVE_CHILD = 0;
 
@@ -102,14 +102,14 @@ abstract class Node extends Model
         return $this->getAttribute($this->getParentColumnName());
     }
 
-    public function getLeft()
+    public function getLeft(): ?BigInteger
     {
-        return $this->getAttribute($this->getLeftColumnName());
+        return is_null($left = $this->getAttribute($this->getLeftColumnName())) ? $left : BigInteger::of($left);
     }
 
-    public function getRight()
+    public function getRight(): ?BigInteger
     {
-        return $this->getAttribute($this->getRightColumnName());
+        return is_null($right = $this->getAttribute($this->getRightColumnName())) ? $right : BigInteger::of($right);
     }
 
     public function getDepth(): ?int
@@ -117,7 +117,20 @@ abstract class Node extends Model
         return $this->getAttribute($this->getDepthColumnName());
     }
 
-    public function getLeftBoundary()
+    public static function rootLeftBoundary(): BigInteger
+    {
+        return BigInteger::of(static::LEFT_BOUND);
+    }
+
+    public static function rootRightBoundary(): BigInteger
+    {
+        static $rightBound = static::RIGHT_BOUND;
+        $rightBound ??= static::query()->selectRaw('~0 as result')->value('result');
+
+        return BigInteger::of($rightBound);
+    }
+
+    public function getLeftBoundary(): ?BigInteger
     {
         if (! is_null($leftSibling = $this->getLeftSibling())) {
             return $leftSibling->getRight();
@@ -127,10 +140,10 @@ abstract class Node extends Model
             return $this->parent->getLeft();
         }
 
-        return static::LEFT_BOUND;
+        return static::rootLeftBoundary();
     }
 
-    public function getRightBoundary()
+    public function getRightBoundary(): ?BigInteger
     {
         if (! is_null($rightSibling = $this->getRightSibling())) {
             return $rightSibling->getLeft();
@@ -140,26 +153,34 @@ abstract class Node extends Model
             return $this->parent->getRight();
         }
 
-        return static::RIGHT_BOUND;
+        return static::rootRightBoundary();
     }
 
-    public function getInnerSpace()
+    public function getInnerSpace(): ?BigInteger
     {
         if (! is_null($left = $this->getLeft()) && ! is_null($right = $this->getRight())) {
-            return $right - $left;
+            return $right->minus($left);
         }
 
         return null;
     }
 
-    public function getLeftSpace()
+    public function getLeftSpace(): ?BigInteger
     {
-        return ! is_null($leftBound = $this->getLeftBoundary()) ? $this->getLeft() - $leftBound : null;
+        if (! is_null($leftBound = $this->getLeftBoundary()) && ! is_null($left = $this->getLeft())) {
+            return $left->minus($leftBound);
+        }
+
+        return null;
     }
 
-    public function getRightSpace()
+    public function getRightSpace(): ?BigInteger
     {
-        return ! is_null($rightBound = $this->getRightBoundary()) ? $rightBound - $this->getRight() : null;
+        if (! is_null($right = $this->getRight()) && ! is_null($rightBound = $this->getRightBoundary())) {
+            return $rightBound->minus($right);
+        }
+
+        return null;
     }
 
     public static function scopeRoots(Builder $query, array $scope = []): Builder
@@ -477,7 +498,7 @@ abstract class Node extends Model
 
         // Make node the first and only root
         if (is_null($target)) {
-            return [static::LEFT_BOUND, static::RIGHT_BOUND, 0];
+            return [static::rootLeftBoundary(), static::rootRightBoundary(), 0];
         }
 
         $position = $position <=> self::MOVE_CHILD;
@@ -499,18 +520,18 @@ abstract class Node extends Model
         }
     }
 
-    protected function allocateWithin($left, $right, $depth): array
+    protected function allocateWithin(?BigInteger $left, ?BigInteger $right, int $depth): array
     {
-        $space = IntegerAllocator::within($left, $right)->allocateTo(1, 1, 1)[1];
+        $space = IntegerAllocator::within((string) $left, (string) $right)->allocateTo(1, 1, 1)[1];
 
         return [
-            (int) $space->getLeftBoundary(),
-            (int) $space->getRightBoundary(),
+            BigInteger::of((int) $space->getLeftBoundary()),
+            BigInteger::of((int) $space->getRightBoundary()),
             $depth,
         ];
     }
 
-    protected function performSubtreeMove($newLeft, $newRight, $newDepth): self
+    protected function performSubtreeMove(?BigInteger $newLeft, ?BigInteger $newRight, int $newDepth): self
     {
         $connection = $this->getConnection();
         $grammar = $connection->getQueryGrammar();
@@ -523,7 +544,7 @@ abstract class Node extends Model
         $right = $this->getRight();
         $depth = $this->getDepth();
 
-        $scale = ($newRight - $newLeft) / ($right - $left);
+        $scale = $newRight->minus($newLeft)->dividedBy($right->minus($left), RoundingMode::HALF_EVEN);
         $depthShift = $newDepth - $depth;
 
         $rawStatements = [
@@ -533,22 +554,22 @@ abstract class Node extends Model
         ];
 
         $this->newQuery()
-            ->whereBetween($unwrappedLeftColumn, [$left, $right])
-            ->whereBetween($unwrappedRightColumn, [$left, $right])
+            ->whereBetween($unwrappedLeftColumn, [(string) $left, (string) $right])
+            ->whereBetween($unwrappedRightColumn, [(string) $left, (string) $right])
             ->whereNotNull($unwrappedDepthColumn)
             ->update(array_map([$connection, 'raw'], $rawStatements));
 
         return $this;
     }
 
-    protected function setLeft($left): self
+    protected function setLeft(?BigInteger $left): self
     {
-        return $this->setAttribute($this->getLeftColumnName(), $left);
+        return $this->setAttribute($this->getLeftColumnName(), is_null($left) ? $left : (string) $left);
     }
 
-    protected function setRight($right): self
+    protected function setRight(?BigInteger $right): self
     {
-        return $this->setAttribute($this->getRightColumnName(), $right);
+        return $this->setAttribute($this->getRightColumnName(), is_null($right) ? $right : (string) $right);
     }
 
     protected function setDepth(int $depth): self

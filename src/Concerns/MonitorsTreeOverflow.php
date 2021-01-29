@@ -27,12 +27,22 @@ trait MonitorsTreeOverflow
         try {
             return parent::{$method}(...$arguments);
         } catch (QueryException $e) {
-            $columns = [$this->getQualifiedLeftColumnName(), $this->getQualifiedRightColumnName()];
-            if ($this->causedByConstraintViolation($e, $columns)) {
-                throw new TreeOverflowException('Cannot insert node: tree overflown, rebuild needed', 0, $e);
-            }
+            $this->causedByConstraintViolation($e, [
+                $this->getQualifiedLeftColumnName(),
+                $this->getQualifiedRightColumnName(),
+            ]) && $this->throwOverflowException($e);
 
             throw $e;
         }
+    }
+
+    /**
+     * @param  QueryException|null  $previous
+     * @throws TreeOverflowException
+     */
+    protected function throwOverflowException(QueryException $previous = null)
+    {
+        throw (new TreeOverflowException('Cannot insert node: tree overflown, rebuild needed', 0, $previous))
+            ->setNode($this);
     }
 }

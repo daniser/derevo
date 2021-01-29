@@ -18,7 +18,7 @@ trait DetectsConstraintViolations
     {
         return Str::contains($e->getMessage(), array_merge([
             'SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry',
-        ], $this->withoutDatabaseName($columns)));
+        ], (array) $this->withoutDatabaseName($columns)));
     }
 
     /**

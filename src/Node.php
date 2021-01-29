@@ -6,12 +6,12 @@ namespace TTBooking\Derevo;
 
 use Brick\Math\BigInteger;
 use Brick\Math\RoundingMode;
+use Illuminate\Database\Eloquent\Builder as BaseBuilder;
 use Illuminate\Database\Eloquent\Collection as BaseCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use TTBooking\Derevo\Concerns\ColumnScoped;
-use TTBooking\Derevo\Concerns\HasRelationshipsWithinTree;
+use Illuminate\Database\QueryException;
 use TTBooking\Derevo\Relations\HasAncestors;
 use TTBooking\Derevo\Relations\HasDescendants;
 use TTBooking\Derevo\Relations\HasSiblings;
@@ -31,7 +31,9 @@ use TTBooking\Derevo\Relations\HasSiblings;
  */
 abstract class Node extends Model
 {
-    use ColumnScoped, HasRelationshipsWithinTree;
+    use Concerns\ColumnScoped,
+        Concerns\DetectsConstraintViolations,
+        Concerns\HasRelationshipsWithinTree;
 
     protected const LEFT_BOUND = 0;
 
@@ -571,5 +573,29 @@ abstract class Node extends Model
     protected function setDepth(int $depth): self
     {
         return $this->setAttribute($this->getDepthColumnName(), $depth);
+    }
+
+    protected function performUpdate(BaseBuilder $query)
+    {
+        $this->monitoredOperation(__FUNCTION__, $query);
+    }
+
+    protected function performInsert(BaseBuilder $query)
+    {
+        $this->monitoredOperation(__FUNCTION__, $query);
+    }
+
+    protected function monitoredOperation(string $method, ...$arguments)
+    {
+        try {
+            return parent::{$method}(...$arguments);
+        } catch (QueryException $e) {
+            $columns = [$this->getQualifiedLeftColumnName(), $this->getQualifiedRightColumnName()];
+            if ($this->causedByConstraintViolation($e, $columns)) {
+                throw new Exceptions\TreeOverflowException('Cannot insert node: tree overflown, rebuild needed', 0, $e);
+            }
+
+            throw $e;
+        }
     }
 }

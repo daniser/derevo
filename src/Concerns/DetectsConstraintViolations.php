@@ -16,9 +16,9 @@ trait DetectsConstraintViolations
      */
     protected function causedByConstraintViolation(Throwable $e, $columns = []): bool
     {
-        return Str::contains($e->getMessage(), array_merge([
+        return Str::contains($message = $e->getMessage(), [
             'SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry',
-        ], (array) $this->withoutDatabaseName($columns)));
+        ]) && (empty($columns) || Str::contains($message, $this->withoutDatabaseName($columns)));
     }
 
     /**
@@ -27,9 +27,8 @@ trait DetectsConstraintViolations
      */
     protected function withoutDatabaseName($columns)
     {
-        return array_map(
-            static fn (string $column) => Str::substrCount($column, '.') > 1 ? Str::after($column, '.') : $column,
-            (array) $columns
-        );
+        return is_array($columns)
+            ? array_map([$this, __FUNCTION__], $columns)
+            : (Str::substrCount($columns, '.') > 1 ? Str::after($columns, '.') : $columns);
     }
 }

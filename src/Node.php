@@ -31,7 +31,8 @@ abstract class Node extends Model
 {
     use Concerns\ColumnScoped,
         Concerns\HasRelationshipsWithinTree,
-        Concerns\MonitorsTreeOverflow;
+        Concerns\MonitorsTreeOverflow,
+        Concerns\Rebuildable;
 
     protected const LEFT_BOUND = 0;
 

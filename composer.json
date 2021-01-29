@@ -42,7 +42,10 @@
         "laravel": {
             "providers": [
                 "TTBooking\\Derevo\\DerevoServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Tree": "TTBooking\\Derevo\\Facades\\Tree"
+            }
         }
     },
     "config": {

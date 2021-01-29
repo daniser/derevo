@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TTBooking\Derevo\Console;
 
 use Illuminate\Console\Command;
+use TTBooking\Derevo\Contracts\TreeBuilder;
 
 class TreeRebuildCommand extends Command
 {
@@ -26,10 +27,11 @@ class TreeRebuildCommand extends Command
     /**
      * Execute the console command.
      *
+     * @param  TreeBuilder  $tree
      * @return void
      */
-    public function handle()
+    public function handle(TreeBuilder $tree)
     {
-        $this->warn('Not implemented.');
+        $tree->build();
     }
 }

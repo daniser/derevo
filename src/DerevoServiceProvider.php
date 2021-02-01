@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TTBooking\Derevo;
 
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 
 class DerevoServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -47,6 +48,15 @@ class DerevoServiceProvider extends ServiceProvider implements DeferrableProvide
     public function register()
     {
         $this->mergeConfigFrom(__DIR__.'/../config/derevo.php', 'derevo');
+
+        $this->app->afterResolving(Contracts\TreeBuilder::class,
+            fn (Contracts\TreeBuilder $tree, $app) => $tree->setRatios(
+                ...Arr::only(
+                    $app['config']['derevo.allocator.ratios'],
+                    ['left', 'body', 'interim', 'right']
+                )
+            )
+        );
     }
 
     /**

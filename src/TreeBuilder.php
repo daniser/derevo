@@ -7,7 +7,7 @@ namespace TTBooking\Derevo;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigInteger;
 use Brick\Math\BigNumber;
-use Generator;
+use Brick\Math\RoundingMode;
 
 class TreeBuilder implements Contracts\TreeBuilder
 {
@@ -128,9 +128,9 @@ class TreeBuilder implements Contracts\TreeBuilder
      * @param  BigInteger  $left
      * @param  BigInteger  $right
      * @param  int  $count
-     * @return Generator<array<BigInteger>>
+     * @return array<array<BigInteger>>
      */
-    protected function allocateWithin(BigInteger $left, BigInteger $right, int $count = 1): Generator
+    protected function allocateWithin(BigInteger $left, BigInteger $right, int $count = 1): array
     {
         if ($left->isGreaterThanOrEqualTo($right)) {
             throw new \RuntimeException('Left boundary must be lesser than right.');
@@ -138,17 +138,21 @@ class TreeBuilder implements Contracts\TreeBuilder
 
         $space = $right->minus($left)->toBigDecimal();
         $ratioSum = $this->getRatioSum($count);
-        $leftRatio = $this->getLeftRatio()->dividedBy($ratioSum);
-        $bodyRatio = $this->getBodyRatio()->dividedBy($ratioSum);
-        $interimRatio = $this->getInterimRatio()->dividedBy($ratioSum);
+        $leftPadding = $this->getLeftRatio()->dividedBy($ratioSum)->multipliedBy($space);
+        $bodyPadding = $this->getBodyRatio()->dividedBy($ratioSum)->multipliedBy($space);
+        $interimPadding = $this->getInterimRatio()->dividedBy($ratioSum)->multipliedBy($space);
+        $currentOffset = $left->plus($leftPadding);
 
-        for ($current = 0; $current < $count; $current++) yield [
-            BigDecimal::sum(
-                $left,
-                $leftRatio->multipliedBy($space),
-                $bodyRatio->multipliedBy($current)->multipliedBy($space),
-                $interimRatio->multipliedBy($current)->multipliedBy($space),
-            ),
-        ];
+        $chunks = [];
+
+        for ($current = 0; $current < $count; $current++) {
+            $chunks[] = [
+                $currentOffset->toScale(0, RoundingMode::HALF_EVEN)->toBigInteger(),
+                $currentOffset->plus($bodyPadding)->toScale(0, RoundingMode::HALF_EVEN)->toBigInteger(),
+            ];
+            $currentOffset = BigDecimal::sum($currentOffset, $bodyPadding, $interimPadding);
+        }
+
+        return $chunks;
     }
 }
